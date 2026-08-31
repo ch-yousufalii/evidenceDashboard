@@ -1,0 +1,14 @@
+# secrets — never commit
+.env
+railway.env
+connection.yaml.bak
+
+# evidence local cache
+.evidence/
+
+# evidence monorepo (dev only, has its own repo)
+evidence/
+
+# node
+node_modules/
+archive/

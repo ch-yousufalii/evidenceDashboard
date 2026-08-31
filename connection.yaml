@@ -1,0 +1,8 @@
+type: postgres
+host: tokaido.proxy.rlwy.net
+port: 32353
+database: railway
+user: postgres
+password: ${POSTGRES_PASSWORD}
+schema: public
+sslmode: require
