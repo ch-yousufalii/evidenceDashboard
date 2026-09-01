@@ -25,6 +25,15 @@ order by created_at desc
     }
     #orders-app .toolbar input:focus, #orders-app .toolbar select:focus { border-color: #52525b; }
     #orders-app .toolbar input[type="date"] { color-scheme: dark; }
+    #orders-app .selwrap { position: relative; display: inline-flex; }
+    #orders-app .selwrap select { min-width: 150px; padding-right: 30px; }
+    #orders-app .sel-spin {
+      position: absolute; top: 50%; right: 26px; width: 12px; height: 12px; margin-top: -7px;
+      border: 2px solid #3f3f46; border-top-color: #60a5fa; border-radius: 50%;
+      animation: ordspin .7s linear infinite; display: none; pointer-events: none;
+    }
+    #orders-app .selwrap.loading .sel-spin { display: block; }
+    @keyframes ordspin { to { transform: rotate(360deg); } }
     #orders-app .clrbtn {
       padding: 8px 14px; font-size: 12px; color: #a1a1aa; background: transparent;
       border: 1px solid #3f3f46; border-radius: 8px; cursor: pointer;
@@ -52,35 +61,42 @@ order by created_at desc
     #orders-app .pgbtn:hover:not(:disabled) { background: #27272a; }
     #orders-app .pgbtn.cur { background: #27272a; border-color: #52525b; font-weight: 600; }
     #orders-app .pgbtns { display: flex; gap: 4px; align-items: center; }
-    #orders-app .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); z-index: 20; display: none; }
+    #orders-app .stage { display: flex; align-items: stretch; }
+    #orders-app .stage.open #ord-list { flex: 1 1 auto; min-width: 0; }
     #orders-app .drawer {
-      position: absolute; top: 0; right: -480px; width: 440px; max-width: 90%; min-height: 100%;
-      background: #101012; border-left: 1px solid #27272a; z-index: 30;
-      padding: 24px; overflow-y: auto; transition: right .22s ease;
+      display: none; flex: 0 0 400px; width: 400px; max-width: 45%; position: relative;
+      background: #101012; border-left: 1px solid #27272a;
+      padding: 22px; overflow-y: auto;
     }
-    #orders-app .drawer.open { right: 0; }
+    #orders-app .stage.open .drawer { display: block; }
+    #orders-app #ord-close {
+      position: absolute; top: 12px; right: 12px; width: 28px; height: 28px;
+      background: transparent; border: 1px solid #3f3f46; border-radius: 8px;
+      color: #fafafa; cursor: pointer; font-size: 13px; line-height: 1;
+    }
+    #orders-app #ord-close:hover { background: #27272a; border-color: #52525b; }
     #orders-app .drow { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid #1f1f23; font-size: 13px; }
     #orders-app .drow .k { color: #a1a1aa; }
     #orders-app .drow .v { color: #fafafa; font-weight: 500; text-align: right; }
     #orders-app .tag { display: inline-block; padding: 2px 9px; font-size: 11px; border-radius: 999px; background: #1c1c1f; border: 1px solid #3f3f46; color: #d4d4d8; }
-    #orders-app details { border: 1px solid #27272a; border-radius: 8px; margin-top: 14px; background: #0d0d0f; }
-    #orders-app summary { padding: 9px 12px; font-size: 12px; color: #a1a1aa; cursor: pointer; text-transform: uppercase; letter-spacing: .06em; }
-    #orders-app summary:hover { color: #fafafa; }
-    #orders-app pre { margin: 0; padding: 12px; font-size: 11px; color: #a1a1aa; overflow-x: auto; border-top: 1px solid #1f1f23; }
     #orders-app .sect { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #71717a; margin: 18px 0 4px; }
   </style>
 
   <div class="toolbar">
     <input id="ord-search" type="text" placeholder="Search order or customer..." style="flex:1 1 200px;">
-    <select id="ord-customer"></select>
+    <div class="selwrap" id="ord-cust-wrap">
+      <select id="ord-customer" aria-label="Filter by customer">
+        <option value="all">All customers</option>
+      </select>
+      <span class="sel-spin" aria-hidden="true"></span>
+    </div>
     <input id="ord-from" type="date" title="From date">
     <input id="ord-to" type="date" title="To date">
     <button id="ord-clear" class="clrbtn" type="button">Clear Filters</button>
   </div>
 
-  <div id="ord-stage" style="position:relative;">
+  <div id="ord-stage" class="stage">
     <div id="ord-list"></div>
-    <div id="ord-backdrop" class="backdrop"></div>
     <div id="ord-drawer" class="drawer"></div>
   </div>
 </div>
@@ -125,24 +141,18 @@ order by created_at desc
       ordDetailRow('Total', ordMoney(r.total)) +
       ordDetailRow('Order Date', r.date) +
       ordDetailRow('Created', r.created) +
-      '</div>' +
-      '<details><summary>Raw record (JSON)</summary><pre>' + ordEsc(JSON.stringify(r, null, 2)) + '</pre></details>';
-    d.classList.add('open');
-    var bd = document.getElementById('ord-backdrop');
-    if (bd) bd.style.display = 'block';
+      '</div>';
+    document.getElementById('ord-stage').classList.add('open');
     document.getElementById('ord-close').onclick = ordCloseDrawer;
     ordPaint();
   }
   function ordCloseDrawer() {
-    var d = document.getElementById('ord-drawer');
-    var bd = document.getElementById('ord-backdrop');
     ORD.selected = null;
-    if (d) d.classList.remove('open');
-    if (bd) bd.style.display = 'none';
+    var stage = document.getElementById('ord-stage');
+    if (stage) stage.classList.remove('open');
     ordPaint();
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ordCloseDrawer(); });
-  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'ord-backdrop') ordCloseDrawer(); });
 
   function ordFiltered() {
     var q = ORD.search.trim().toLowerCase();
@@ -252,18 +262,31 @@ order by created_at desc
   }
 
   async function ordInit() {
-    ORD.rows = await evidence.query('orders_list') || [];
+    var wrap = document.getElementById('ord-cust-wrap');
+    if (wrap) wrap.classList.add('loading');
+    try {
+      ORD.rows = (await evidence.query('orders_list')) || [];
+    } finally {
+      if (wrap) wrap.classList.remove('loading');
+    }
     var customers = [];
     ORD.rows.forEach(function (r) { if (customers.indexOf(r.customer) === -1) customers.push(r.customer); });
     customers.sort();
-    document.getElementById('ord-customer').innerHTML = '<option value="all">All customers</option>' +
+    var sel = document.getElementById('ord-customer');
+    sel.innerHTML = '<option value="all">All customers</option>' +
       customers.map(function (c) { return '<option value="' + ordEsc(c) + '">' + ordEsc(c) + '</option>'; }).join('');
+    sel.value = ORD.customer;
+    if (sel.value !== ORD.customer) { ORD.customer = 'all'; sel.value = 'all'; }
     ordPaint();
   }
 
   evidence.subscribe(function () { ordInit(); });
   (async function () {
     await ordInit();
+    var list = document.getElementById('ord-list');
+    list.addEventListener('click', function (e) {
+      if (ORD.selected && !e.target.closest('tr[data-i], th, button, select, label')) ordCloseDrawer();
+    });
     var si = document.getElementById('ord-search');
     si.oninput = function (e) { ORD.search = e.target.value; ORD.page = 1; ordPaint(); };
     var sel = document.getElementById('ord-customer');

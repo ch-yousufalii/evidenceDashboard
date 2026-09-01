@@ -166,6 +166,14 @@ const server = http.createServer((req, res) => {
   }
 
   const cookies = parseCookies(req);
+
+  // The {% html %} sandbox iframe runs on an opaque origin and cannot send
+  // cookies, so its runtime asset must be served without auth. It is static
+  // framework JavaScript and carries no data.
+  if (url.pathname.startsWith('/sandbox/')) {
+    return proxy(req, res);
+  }
+
   if (!verifyToken(cookies[COOKIE])) {
     res.writeHead(302, { location: '/login' });
     return res.end();
