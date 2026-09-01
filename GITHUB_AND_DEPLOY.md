@@ -30,31 +30,39 @@ git commit -m "..."
 git push origin main
 ```
 
-## 2. Docker image (official pattern)
+## 2. Docker image (custom login gateway)
 
-Per https://docs.evidence.dev/self-host/railway — the entire Dockerfile is:
+The Dockerfile builds a single container with two processes:
+
+1. **`evidence serve`** on `127.0.0.1:3001` with `EVIDENCE_AUTH_DISABLED=true`
+   (the gateway below is the authentication boundary — the official
+   "authenticating reverse proxy" pattern from docs.evidence.dev/self-host/authentication)
+2. **`login-gateway/proxy.js`** (Node, zero dependencies) on Railway's `PORT`:
+   - serves a styled **custom login page** at `/login`
+   - validates `EVIDENCE_BASIC_USER` / `EVIDENCE_BASIC_PASSWORD`
+     (constant-time comparison), issues an HMAC-signed session cookie
+     (`LOGIN_SECRET` signs it, 12-hour expiry, HttpOnly + SameSite=Lax)
+   - proxies all authenticated traffic to the Evidence server
+   - `/logout` clears the session; tampered cookies are rejected
 
 ```docker
-FROM evidencedev/serve:latest
-COPY --chown=evidence:evidence . /project
+FROM node:20-slim
+# … installs the pinned Evidence CLI binary, then:
+CMD evidence serve --host 127.0.0.1 --port 3001 (auth disabled) & node login-gateway/proxy.js
 ```
-
-`evidencedev/serve` is Evidence's official production image:
-
-- Runs `evidence serve` (hardened mode: no dev reload, no dev machinery)
-- Binds to Railway's injected `PORT` automatically
-- Enforces HTTP Basic Auth via `EVIDENCE_BASIC_USER` / `EVIDENCE_BASIC_PASSWORD`
-  (refuses to bind publicly without them)
 
 Verified locally before pushing:
 
 ```bash
-docker build -t evidence-official .
-docker run -p 3200:3000 \
-  -e POSTGRES_PASSWORD=... \
-  -e EVIDENCE_BASIC_USER=admin -e EVIDENCE_BASIC_PASSWORD=... \
-  evidence-official
-# → 401 without credentials, 200 with, dashboard renders live data
+docker build -t evidence-login .
+docker run -p 3300:3000 -e POSTGRES_PASSWORD=... -e EVIDENCE_BASIC_USER=admin \
+  -e EVIDENCE_BASIC_PASSWORD=... -e LOGIN_SECRET=<random> evidence-login
+# → GET /            302 → /login
+# → GET /login       styled sign-in page
+# → POST bad creds   401 (error shown on page)
+# → POST good creds  302 → / + signed session cookie
+# → GET / with cookie 200, dashboard renders live data
+# → /logout          clears session; tampered cookie rejected
 ```
 
 ## 3. Railway setup (step by step)
@@ -67,6 +75,7 @@ docker run -p 3200:3000 \
    POSTGRES_PASSWORD=IMjShQevqnlRpqkTMDfstkiKnzpoHtAo
    EVIDENCE_BASIC_USER=admin
    EVIDENCE_BASIC_PASSWORD=<pick-a-strong-password>
+   LOGIN_SECRET=<random string, e.g. openssl rand -hex 32>
    ```
 
    (Raw Editor accepts plain `KEY=value` dotenv lines; seal secrets with the 🔒 icon.)
@@ -80,21 +89,17 @@ docker run -p 3200:3000 \
 - First-load shows the browser's HTTP Basic Auth prompt (this is the standard
   self-host auth; see "Login options" below).
 
-## 5. Login options (why the login looks the way it does)
+## 5. Login (custom login page — shipped)
 
-The ugly popup is the browser's **native HTTP Basic Auth** dialog — that is the only
-auth mechanism `evidence serve` (self-hosted) provides. Options:
+The Basic Auth popup is gone. The container now serves a **styled login page** at
+`/login` (dark card UI matching the dashboard theme). Credentials are the
+`EVIDENCE_BASIC_USER` / `EVIDENCE_BASIC_PASSWORD` variables; sessions are HMAC-signed
+cookies valid for 12 hours; `/logout` signs out. Changing `EVIDENCE_BASIC_PASSWORD`
+and redeploying invalidates all sessions.
 
-| Option | Look | Effort |
-|---|---|---|
-| **Basic Auth (current)** | Native browser popup | Zero — already on |
-| **Evidence Studio** (hosted) | Proper login page, Google SSO, per-user access rules, page-level permissions | Sign up at evidence.studio, `evidence launch` to connect the repo; deploys via git push |
-| **Cloudflare Access / reverse-proxy SSO** in front of the Railway URL | Branded SSO page (Google/GitHub login) | Put Cloudflare in front of the domain, enable Zero Trust access |
-| `EVIDENCE_AUTH_DISABLED=true` | No login at all | **Not recommended** — dashboard would be public |
-
-Recommendation: keep Basic Auth for internal use; move to **Evidence Studio** if you
-want real login screens, user management, and scheduled reports without managing
-infrastructure.
+If you later want real SSO (Google/GitHub sign-in buttons, per-user roles), swap the
+gateway for **Cloudflare Access** or **oauth2-proxy** (same proxy pattern), or move to
+**Evidence Studio** (hosted: login screens, user management, scheduled reports).
 
 ## 6. Useful operations
 

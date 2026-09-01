@@ -206,10 +206,13 @@ variables (Raw Editor accepts dotenv format) → **Settings → Networking → G
 Domain**. Every push to `main` redeploys to the same URL. Full details in
 [GITHUB_AND_DEPLOY.md](./GITHUB_AND_DEPLOY.md).
 
-**Auth note:** self-hosted auth is the browser's native Basic Auth popup (no logout
-button; browsers cache credentials until exit). To force re-auth, change
-`EVIDENCE_BASIC_PASSWORD` and redeploy. For real login screens/SSO, put an
-authenticating reverse proxy in front, or use Studio (Path B).
+**Auth note:** this repo ships a **custom login gateway** (`login-gateway/proxy.js`) —
+a styled sign-in page with an HMAC-signed session cookie, running in the same container
+as `evidence serve` (auth disabled, localhost-only). This implements the official
+"authenticating reverse proxy" pattern. `EVIDENCE_BASIC_USER` / `EVIDENCE_BASIC_PASSWORD`
+are the login credentials; `LOGIN_SECRET` (any random string) signs the session cookie.
+`/logout` clears the session. For org SSO (Google/GitHub/Okta), swap the gateway for
+Cloudflare Access or oauth2-proxy, or use Studio (Path B).
 
 ### Path B — Evidence Studio (proper login, SSO, roles)
 
