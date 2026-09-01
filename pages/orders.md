@@ -1,6 +1,6 @@
 # Orders
 
-Search, filter, sort, and click any row to open its detailed view in the side panel.
+Search, filter, sort.
 
 ```sql orders_list
 select
