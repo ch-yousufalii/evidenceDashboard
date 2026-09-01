@@ -66,47 +66,38 @@ const LOGIN_PAGE = (error = '') => `<!doctype html>
   body {
     font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(1200px 600px at 20% -10%, #1e293b 0%, #0b1120 55%, #060a15 100%);
-    color: #e2e8f0; padding: 24px;
+    background: #09090b; color: #fafafa; padding: 24px;
   }
   .card {
-    width: 100%; max-width: 380px; background: rgba(15, 23, 42, .85);
-    border: 1px solid rgba(148, 163, 184, .15); border-radius: 16px;
-    padding: 36px 32px; box-shadow: 0 24px 60px rgba(0,0,0,.5);
-    backdrop-filter: blur(8px);
+    width: 100%; max-width: 360px; background: #101012;
+    border: 1px solid #27272a; border-radius: 12px;
+    padding: 36px 32px;
   }
-  .logo {
-    width: 44px; height: 44px; border-radius: 12px; margin: 0 auto 18px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    display: flex; align-items: center; justify-content: center; font-size: 22px;
-  }
-  h1 { font-size: 20px; font-weight: 600; text-align: center; letter-spacing: -.01em; }
-  p.sub { font-size: 13px; color: #94a3b8; text-align: center; margin: 6px 0 26px; }
-  label { display: block; font-size: 12px; font-weight: 500; color: #94a3b8; margin: 14px 0 6px; }
+  h1 { font-size: 18px; font-weight: 600; text-align: center; color: #fafafa; letter-spacing: -.01em; }
+  p.sub { font-size: 13px; color: #a1a1aa; text-align: center; margin: 6px 0 26px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: #a1a1aa; margin: 14px 0 6px; }
   input {
-    width: 100%; padding: 11px 13px; font-size: 14px; color: #e2e8f0;
-    background: rgba(2, 6, 23, .6); border: 1px solid rgba(148, 163, 184, .2);
-    border-radius: 9px; outline: none; transition: border-color .15s, box-shadow .15s;
+    width: 100%; padding: 11px 13px; font-size: 14px; color: #fafafa;
+    background: #09090b; border: 1px solid #27272a;
+    border-radius: 8px; outline: none; transition: border-color .15s;
   }
-  input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .18); }
+  input:focus { border-color: #fafafa; }
   button {
-    width: 100%; margin-top: 24px; padding: 12px; font-size: 14px; font-weight: 600;
-    color: #fff; background: linear-gradient(135deg, #3b82f6, #6366f1);
-    border: none; border-radius: 9px; cursor: pointer; transition: filter .15s, transform .05s;
+    width: 100%; margin-top: 24px; padding: 11px; font-size: 14px; font-weight: 600;
+    color: #09090b; background: #fafafa;
+    border: none; border-radius: 8px; cursor: pointer; transition: background .15s;
   }
-  button:hover { filter: brightness(1.1); }
-  button:active { transform: scale(.99); }
+  button:hover { background: #e4e4e7; }
   .error {
     display: ${error ? 'block' : 'none'}; margin-top: 16px; padding: 10px 12px;
-    font-size: 13px; color: #fca5a5; background: rgba(239, 68, 68, .1);
+    font-size: 13px; color: #f87171; background: rgba(239, 68, 68, .08);
     border: 1px solid rgba(239, 68, 68, .25); border-radius: 8px; text-align: center;
   }
-  .footer { margin-top: 22px; font-size: 11px; color: #475569; text-align: center; }
+  .footer { margin-top: 22px; font-size: 11px; color: #52525b; text-align: center; }
 </style>
 </head>
 <body>
   <form class="card" method="POST" action="/login">
-    <div class="logo">📊</div>
     <h1>Sales Dashboard</h1>
     <p class="sub">Sign in to view live reports</p>
     <label for="username">Username</label>
@@ -121,7 +112,7 @@ const LOGIN_PAGE = (error = '') => `<!doctype html>
 </html>`;
 
 const STARTING_PAGE = `<!doctype html><html><head><meta http-equiv="refresh" content="3"><style>
-body{font-family:system-ui;background:#0b1120;color:#94a3b8;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+body{font-family:system-ui;background:#09090b;color:#a1a1aa;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
 </style></head><body>Dashboard is starting…</body></html>`;
 
 let upstreamUp = false;
